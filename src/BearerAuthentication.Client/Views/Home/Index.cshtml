@@ -1,0 +1,109 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<h1 id="name"></h1>
+<button id="logout" class="btn btn-default">Log out</button>
+
+<form id="form">
+    <div class="form-group">
+        <label for="Login">Login</label>
+        <input type="text" class="form-control" id="Login" placeholder="Login">
+    </div>
+    <div class="form-group">
+        <label for="Password">Password</label>
+        <input type="password" class="form-control" id="Password" placeholder="Password">
+    </div>
+    <button type="submit" class="btn btn-default">Submit</button>
+</form>
+
+@section scripts
+{
+    <script>
+        function getCookie(name) {
+            var matches = document.cookie.match(new RegExp(
+              "(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + "=([^;]*)"
+            ));
+            return matches ? decodeURIComponent(matches[1]) : undefined;
+        }
+
+        function setCookie(name, value, options) {
+            options = options || {};
+
+            var expires = options.expires;
+
+            if (typeof expires == "number" && expires) {
+                var d = new Date();
+                d.setTime(d.getTime() + expires * 1000);
+                expires = options.expires = d;
+            }
+            if (expires && expires.toUTCString) {
+                options.expires = expires.toUTCString();
+            }
+
+            value = encodeURIComponent(value);
+
+            var updatedCookie = name + "=" + value;
+
+            for (var propName in options) {
+                updatedCookie += "; " + propName;
+                var propValue = options[propName];
+                if (propValue !== true) {
+                    updatedCookie += "=" + propValue;
+                }
+            }
+
+            document.cookie = updatedCookie;
+        }
+
+        function deleteCookie(name) {
+            setCookie(name, "", {
+                expires: -1
+            });
+        }
+
+        $(function () {
+            $("#form").hide();
+            $("#logout").hide();
+
+            var bearer = getCookie("Bearer");
+            $.ajax({
+                url: "http://localhost:54285/api/auth/test",
+                headers: {
+                    "Bearer": bearer
+                }
+            }).then(function(data) {
+                $("#name").html(data);
+                $("#logout").show();
+            }, function() {
+                $("#form").show();
+            });
+
+            $("#form").submit(function() {
+                $.ajax({
+                    url: "http://localhost:54285/api/auth",
+                    method: "POST",
+                    data: {
+                        login: $("#Login").val(),
+                        password: $("#Password").val()
+                    }
+                }).then(function(data, status, request) {
+                    bearer = request.getResponseHeader("Bearer");
+                    setCookie("Bearer", bearer);
+                    window.location.reload();
+                });
+                return false;
+            });
+
+            $("#logout").click(function() {
+                $.ajax({
+                    url: "http://localhost:54285/api/auth",
+                    method: "DELETE"
+                }).then(function () {
+                    deleteCookie("Bearer");
+                    window.location.reload();
+                });
+            });
+        })
+    </script>
+}
